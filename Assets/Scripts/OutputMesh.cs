@@ -27,151 +27,6 @@ public class OutputMesh : MonoBehaviour
         }
     }
 
-    private byte[] ToByte(bool data)
-    {
-        unsafe
-        {
-            return new byte[] { data ? (byte)0x01 : (byte)0x00 };
-            return new byte[] { *(byte*)&data };
-        }
-    }
-
-    private byte[] ToByte(float data)
-    {
-        unsafe
-        {
-            byte* pdata = (byte*)&data;
-            byte[] byteArray = new byte[sizeof(float)];
-            for (int i = 0; i < sizeof(float); ++i)
-                byteArray[i] = *pdata++;
-            return byteArray;
-        }
-    }
-
-    private byte[] ToByte(int data)
-    {
-        unsafe
-        {
-            byte* pdata = (byte*)&data;
-            byte[] byteArray = new byte[sizeof(float)];
-            for (int i = 0; i < sizeof(float); ++i)
-                byteArray[i] = *pdata++;
-            return byteArray;
-        }
-    }
-
-    private byte[] ToByte(int[] data)
-    {
-        unsafe
-        {
-            fixed (int* ptrf = data)
-            {
-                int itemSize = sizeof(int);
-                byte[] byteArray = new byte[itemSize * data.Length];
-                byte* bytes = (byte*)ptrf;
-                for (int i = 0; i < data.Length * itemSize; ++i)
-                {
-                    byteArray[i] = *bytes++;
-                }
-                return byteArray;
-            }
-        }
-    }
-
-    private byte[] ToByte(Vector2 data)
-    {
-        List<byte> result = new List<byte>(2 * sizeof(float));
-
-        result.AddRange(ToByte(data.x));
-        result.AddRange(ToByte(data.y));
-
-        return result.ToArray();
-    }
-
-    private byte[] ToByte(Vector3 data)
-    {
-        List<byte> result = new List<byte>(3 * sizeof(float));
-
-        result.AddRange(ToByte(data.x));
-        result.AddRange(ToByte(data.y));
-        result.AddRange(ToByte(data.z));
-
-        return result.ToArray();
-    }
-
-    private byte[] ToByte(Vector4 data)
-    {
-        List<byte> result = new List<byte>(4 * sizeof(float));
-
-        result.AddRange(ToByte(data.x));
-        result.AddRange(ToByte(data.y));
-        result.AddRange(ToByte(data.z));
-        result.AddRange(ToByte(data.w));
-
-        return result.ToArray();
-    }
-
-    private byte[] ToByte(Vector2[] data)
-    {
-        List<byte> result = new List<byte>(data.Length * 2 * sizeof(float));
-        for (int i = 0; i < data.Length; i++)
-        {
-            var bsx = ToByte(data[i].x);
-            var bsy = ToByte(data[i].y);
-            result.AddRange(bsx);
-            result.AddRange(bsy);
-        }
-        return result.ToArray();
-    }
-
-    private byte[] ToByte(Vector3[] data)
-    {
-        List<byte> result = new List<byte>(data.Length * 3 * sizeof(float));
-        for(int i = 0; i < data.Length; i++)
-        {
-            var bsx = ToByte(data[i].x);
-            var bsy = ToByte(data[i].y);
-            var bsz = ToByte(data[i].z);
-            result.AddRange(bsx);
-            result.AddRange(bsy);
-            result.AddRange(bsz);
-        }
-        return result.ToArray();
-    }
-
-    private byte[] ToByte(Color[] data)
-    {
-        List<byte> result = new List<byte>(data.Length * 4 * sizeof(float));
-        for (int i = 0; i < data.Length; i++)
-        {
-            var bsx = ToByte(data[i].r);
-            var bsy = ToByte(data[i].g);
-            var bsz = ToByte(data[i].b);
-            var bsw = ToByte(data[i].a);
-            result.AddRange(bsx);
-            result.AddRange(bsy);
-            result.AddRange(bsz);
-            result.AddRange(bsw);
-        }
-        return result.ToArray();
-    }
-
-    private byte[] ToByte(Vector4[] data)
-    {
-        List<byte> result = new List<byte>(data.Length * 4 * sizeof(float));
-        for (int i = 0; i < data.Length; i++)
-        {
-            var bsx = ToByte(data[i].x);
-            var bsy = ToByte(data[i].y);
-            var bsz = ToByte(data[i].z);
-            var bsw = ToByte(data[i].w);
-            result.AddRange(bsx);
-            result.AddRange(bsy);
-            result.AddRange(bsz);
-            result.AddRange(bsw);
-        }
-        return result.ToArray();
-    }
 
     public Mesh mesh;
     public string path = "";
@@ -183,7 +38,7 @@ public class OutputMesh : MonoBehaviour
         using (FileStream fs = new FileStream(path, FileMode.OpenOrCreate))
         {
             //写入顶点总数
-            var vCount = ToByte(mesh.vertexCount);
+            var vCount = ConvertToByte.ToByte(mesh.vertexCount);
             Debug.Log(vCount.Length);
             fs.Write(vCount, 0, vCount.Length);
 
@@ -193,12 +48,12 @@ public class OutputMesh : MonoBehaviour
             //写入顶点数据
             for (int i = 0; i < mesh.vertexCount; i++)
             {
-                var ve = ToByte(mesh.vertices[i]);
-                var co = hadColor ? ToByte(mesh.colors[i]) : ToByte(Color.white);
-                var nr = ToByte(mesh.normals[i]);
-                var ta = ToByte(mesh.tangents[i]);
-                var uv0 = ToByte(mesh.uv[i]);
-                var uv1 = hadUV1 ? ToByte(mesh.uv2[i]) : ToByte(Vector2.zero);
+                var ve = ConvertToByte.ToByte(mesh.vertices[i]);
+                var co = hadColor ? ConvertToByte.ToByte(mesh.colors[i]) : ConvertToByte.ToByte(Color.white);
+                var nr = ConvertToByte.ToByte(mesh.normals[i]);
+                var ta = ConvertToByte.ToByte(mesh.tangents[i]);
+                var uv0 = ConvertToByte.ToByte(mesh.uv[i]);
+                var uv1 = hadUV1 ? ConvertToByte.ToByte(mesh.uv2[i]) : ConvertToByte.ToByte(Vector2.zero);
                 fs.Write(ve, 0, ve.Length);
                 fs.Write(co, 0, co.Length);
                 fs.Write(nr, 0, nr.Length);
@@ -208,27 +63,27 @@ public class OutputMesh : MonoBehaviour
             }
 
             //写入索引数据
-            var trisCount = ToByte(mesh.triangles.Length);
-            var tris = ToByte(mesh.triangles);
+            var trisCount = ConvertToByte.ToByte(mesh.triangles.Length);
+            var tris = ConvertToByte.ToByte(mesh.triangles);
 
             fs.Write(trisCount, 0, trisCount.Length);
             fs.Write(tris, 0, tris.Length);
 
             /*
-            var vex = ToByte(mesh.vertices);
-            var nomrals = ToByte(mesh.normals);
-            var tangents = ToByte(mesh.tangents);
-            var uv = ToByte(mesh.uv);
+            var vex = ConvertToByte.ToByte(mesh.vertices);
+            var nomrals = ConvertToByte.ToByte(mesh.normals);
+            var tangents = ConvertToByte.ToByte(mesh.tangents);
+            var uv = ConvertToByte.ToByte(mesh.uv);
             fs.Write(vex, 0, vex.Length);
             fs.Write(nomrals, 0, nomrals.Length);
             fs.Write(tangents, 0, tangents.Length);
 
             //判断如果存在顶点色，则写入
             bool hadColor = mesh.uv2.Length == mesh.vertexCount;
-            fs.Write(ToByte(hadColor), 0, 1);
+            fs.Write(ConvertToByte.ToByte(hadColor), 0, 1);
             if(hadColor)
             {
-                var colors = ToByte(mesh.colors);
+                var colors = ConvertToByte.ToByte(mesh.colors);
                 fs.Write(colors, 0, colors.Length);
             }
 
@@ -237,15 +92,15 @@ public class OutputMesh : MonoBehaviour
             //判断UV2的存在并写入数据
             //如果UV2存在则直接写入
             bool hadUV2 = mesh.uv2.Length == mesh.vertexCount;
-            fs.Write(ToByte(hadUV2), 0, 1);
+            fs.Write(ConvertToByte.ToByte(hadUV2), 0, 1);
             if(hadUV2)
             {
-                var uv2 = ToByte(mesh.uv2);
+                var uv2 = ConvertToByte.ToByte(mesh.uv2);
                 fs.Write(uv2, 0, uv2.Length);
             }
 
-            var trisCount = ToByte(mesh.triangles.Length);
-            var tris = ToByte(mesh.triangles);
+            var trisCount = ConvertToByte.ToByte(mesh.triangles.Length);
+            var tris = ConvertToByte.ToByte(mesh.triangles);
 
             fs.Write(trisCount, 0, trisCount.Length);
             fs.Write(tris, 0, tris.Length);
@@ -260,7 +115,7 @@ public class OutputMesh : MonoBehaviour
         //    imgs[i] = i;
         //}
 
-        //byte[] bytes = ObjectToBytes(imgs);
+        //byte[] bytes = ObjectConvertToByte.ToBytes(imgs);
 
         float[] fls = new float[32];
         for(int i = 0; i < 32; i++)
