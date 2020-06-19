@@ -69,6 +69,26 @@ public class OutputMesh : MonoBehaviour
             fs.Write(trisCount, 0, trisCount.Length);
             fs.Write(tris, 0, tris.Length);
 
+            Vector3 bCenter = mesh.bounds.center;
+            Vector3 bSize = mesh.bounds.size;
+            Vector3 bMin = mesh.bounds.min;
+            Vector3 bMax = mesh.bounds.max;
+
+            var byteCenter = ConvertToByte.ToByte(bCenter);
+            var byteSize = ConvertToByte.ToByte(bSize);
+            var byteMin = ConvertToByte.ToByte(bMin);
+            var byteMax = ConvertToByte.ToByte(bMax);
+
+            fs.Write(byteCenter, 0, byteCenter.Length);
+            fs.Write(byteSize, 0, byteSize.Length);
+            fs.Write(byteMin, 0, byteMin.Length);
+            fs.Write(byteMax, 0, byteMax.Length);
+
+            Debug.Log(bCenter.ToString("F5"));
+            Debug.Log(bSize.ToString("F5"));
+            Debug.Log(bMin.ToString("F5"));
+            Debug.Log(bMax.ToString("F5"));
+
             /*
             var vex = ConvertToByte.ToByte(mesh.vertices);
             var nomrals = ConvertToByte.ToByte(mesh.normals);
