@@ -57,7 +57,7 @@ public partial class ExportScene : EditorWindow
     #region Camera
     public class CameraData : IComponentData
     {
-        public string ComponentName => "Camera";
+        public string ComponentName { get => "Camera"; }
 
         public float Size;
         public float FOV;
@@ -70,6 +70,8 @@ public partial class ExportScene : EditorWindow
         public JsonData ToJson()
         {
             JsonData jd = new JsonData();
+            jd["ComponentName"] = ComponentName;
+
             jd["Size"] = Size;
             jd["FOV"] = FOV;
             jd["FarPlane"] = FarPlane;
@@ -103,7 +105,7 @@ public partial class ExportScene : EditorWindow
 	        LIGHT_POINT,
 	        LIGHT_SPOT,
         };
-        public string ComponentName => "Light";
+        public string ComponentName { get => "Light"; }
 
         public float Intensity;
         public float Range;
@@ -115,6 +117,8 @@ public partial class ExportScene : EditorWindow
         public JsonData ToJson()
         {
             JsonData jd = new JsonData();
+            jd["ComponentName"] = ComponentName;
+
             jd["Intensity"] = Intensity;
             jd["Range"] = Range;
             jd["LightType"] = lightType;
@@ -159,13 +163,14 @@ public partial class ExportScene : EditorWindow
     #region MeshFilter
     public class MeshFilterData : IComponentData
     {
-        public string ComponentName => "MeshFilter";
+        public string ComponentName { get => "MeshFilter"; }
 
         int mesh;
 
         public JsonData ToJson()
         {
             JsonData jd = new JsonData();
+            jd["ComponentName"] = ComponentName;
             jd["Mesh"] = mesh;
             return jd;
         }
@@ -183,15 +188,16 @@ public partial class ExportScene : EditorWindow
     #region MeshRenderer
     public class MeshRendererData : IComponentData
     {
-        string IComponentData.ComponentName => "MeshRenderer";
+        public string ComponentName { get => "MeshRenderer"; }
 
         int material;
 
         JsonData IComponentData.ToJson()
         {
             JsonData jd = new JsonData();
+            jd["ComponentName"] = ComponentName;
             jd["Material"] = material;
-            
+
             return jd;
         }
 
