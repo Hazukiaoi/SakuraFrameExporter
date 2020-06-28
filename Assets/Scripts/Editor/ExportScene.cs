@@ -6,18 +6,22 @@ using LitJson;
 using System;
 using UnityEditor.SceneManagement;
 using System.Net.Http.Headers;
+using UnityEngine.TestTools.Utils;
 
 public partial class ExportScene : EditorWindow
 {
     string savePath = "Assets/";
     static Dictionary<string, Func<Component, IComponentData>> GetComponentData = new Dictionary<string, Func<Component, IComponentData>>();
 
+    static ExportScene window;
+
     [MenuItem("SakuraFrame-Tools/ExportScene")]
     static public void Main()
     {
         Init();
 
-        GetWindow<ExportScene>().Show();
+        window = GetWindow<ExportScene>();
+        window.Show();
     }
 
     static void Init()
@@ -43,11 +47,47 @@ public partial class ExportScene : EditorWindow
         if(GUILayout.Button("Export"))
         {
             ExportActiveScene();
+            ExportAssetsInfo();
         }
     }
 
+    //递归获取和创建树状节点的JsonData
+    void GetJsonData(ref JsonData jsonData, GameObject gameObject)
+    {
+        List<JsonData> components = new List<JsonData>();
+        foreach (var component in gameObject.GetComponents<Component>())
+        {
+            try
+            {
+                components.Add(GetJson(GetComponentData[component.GetType().ToString()](component)));
+            }
+            catch
+            {
+                Debug.Log($"Is not allow Type {component.GetType()}");
+            }
+        }
+        if (components.Count > 0)
+        {
+            JsonData _jo = new JsonData();
+            _jo["Name"] = gameObject.name;
+            JsonData _jc = new JsonData();
+            for (int c = 0; c < components.Count; c++)
+            {
+                _jc.Add(components[c]);
+            }
+            _jo["Components"] = _jc;
+            jsonData.Add(_jo);
+        }
 
+        for(int i = 0; i < gameObject.transform.childCount; i++)
+        {
+            GetJsonData(ref jsonData, gameObject.transform.GetChild(i).gameObject);
+        }
+    }
 
+    /// <summary>
+    /// 导出打开的场景
+    /// </summary>
     void ExportActiveScene()
     {
         string _savePath = $"{savePath}/{GetSceneName()}.SFSce";
@@ -57,30 +97,7 @@ public partial class ExportScene : EditorWindow
 
         for (int i = 0; i < gameObjects.Length; i++)
         {
-            List<JsonData> components = new List<JsonData>();
-            foreach (var component in gameObjects[i].GetComponents<Component>())
-            {
-                try
-                {
-                    components.Add(GetJson(GetComponentData[component.GetType().ToString()](component)));
-                }
-                catch
-                {
-                    Debug.Log($"Is not allow Type {component.GetType()}");
-                }
-            }
-            if (components.Count > 0)
-            {
-                JsonData _jo = new JsonData();
-                _jo["Name"] = gameObjects[i].name;
-                JsonData _jc = new JsonData();
-                for(int c = 0; c < components.Count; c++)
-                {
-                    _jc.Add(components[c]);
-                }
-                _jo["Components"] = _jc;
-                jsonData.Add(_jo);
-            }
+            GetJsonData(ref jsonData, gameObjects[i]);
         }
 
         System.IO.File.WriteAllText(_savePath, jsonData.ToJson());

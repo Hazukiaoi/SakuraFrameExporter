@@ -24,6 +24,7 @@ public partial class ExportScene : EditorWindow
         public Vector3 position;
         public Quaternion rotaiotn;
         public Vector3 scale;
+        public Transform parent;
         public JsonData ToJson()
         {
             JsonData jd = new JsonData();
@@ -44,12 +45,17 @@ public partial class ExportScene : EditorWindow
             jd["Scale"]["X"] = scale.x;
             jd["Scale"]["Y"] = scale.y;
             jd["Scale"]["Z"] = scale.z;
+
+            jd["Parent"] = parent == null ? "NULL" : parent.name;
             return jd;
         }
 
         public static implicit operator TransformData(Transform d)
         {
-            return new TransformData() { position = d.position, rotaiotn = d.rotation, scale = d.localScale };
+            //转换到OpenGL
+            Quaternion rot = MathEx.EulerToOpenGL(d.eulerAngles, MathEx.AxisOrder.XYZ);
+            //return new TransformData() { position = d.position, rotaiotn = d.rotation, scale = d.localScale };
+            return new TransformData() { position = d.position, rotaiotn = rot, scale = d.localScale, parent = d.parent};
         }
     }
     #endregion
@@ -166,12 +172,17 @@ public partial class ExportScene : EditorWindow
         public string ComponentName { get => "MeshFilter"; }
 
         int mesh;
+        Mesh shareMesh;
 
         public JsonData ToJson()
         {
             JsonData jd = new JsonData();
             jd["ComponentName"] = ComponentName;
             jd["Mesh"] = mesh;
+
+            //导出网格资源
+            window.AssetExport(shareMesh);
+
             return jd;
         }
 
@@ -179,7 +190,8 @@ public partial class ExportScene : EditorWindow
         {
             return new MeshFilterData()
             {
-                mesh = d.sharedMesh.GetInstanceID()
+                mesh = d.sharedMesh.GetInstanceID(),
+                shareMesh = d.sharedMesh
             };
         }
     }
@@ -192,6 +204,8 @@ public partial class ExportScene : EditorWindow
 
         int material;
 
+        Material shareMaterial;
+
         JsonData IComponentData.ToJson()
         {
             JsonData jd = new JsonData();
@@ -203,7 +217,12 @@ public partial class ExportScene : EditorWindow
 
         public static implicit operator MeshRendererData(MeshRenderer d)
         {
-            return new MeshRendererData() { material = d.sharedMaterial.GetInstanceID() };
+            return new MeshRendererData()
+            {
+                material = d.sharedMaterial.GetInstanceID(),
+                shareMaterial = d.sharedMaterial
+                
+            };
         }
     }
     #endregion
