@@ -212,6 +212,9 @@ public partial class ExportScene : EditorWindow
             jd["ComponentName"] = ComponentName;
             jd["Material"] = material;
 
+            //导出材质资源
+            window.AssetExport(shareMaterial);
+
             return jd;
         }
 

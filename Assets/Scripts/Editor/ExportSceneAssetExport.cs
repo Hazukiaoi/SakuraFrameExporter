@@ -10,11 +10,13 @@ public partial class ExportScene : EditorWindow
 {
     string meshAssetPath = "Mesh/";
     string textureAssetPath = "Textures/";
+    string materialAssetPath = "Materials/";
 
     static Dictionary<int, string> assetInfo = new Dictionary<int, string>();
 
     void AssetExport(Mesh mesh)
     {
+        //检查是否已保存
         if(assetInfo.ContainsKey(mesh.GetInstanceID())) return;
 
         string filename = mesh.GetInstanceID().ToString() + ".dat";
@@ -25,10 +27,12 @@ public partial class ExportScene : EditorWindow
         }
 
         _savePath += filename;
+        string _infoPath = meshAssetPath + filename;
 
         //写入
         using (FileStream fs = new FileStream(_savePath, FileMode.OpenOrCreate))
         {
+            Debug.Log($"Write Mesh{mesh.name} as {filename}");
             //写入顶点总数
             var vCount = ConvertToByte.ToByte(mesh.vertexCount);
             Debug.Log(vCount.Length);
@@ -87,19 +91,128 @@ public partial class ExportScene : EditorWindow
         Debug.Log(mesh.triangles.Length);
 
         //添加已经保存的文件路径信息
-        assetInfo.Add(mesh.GetInstanceID(), _savePath);
+        assetInfo.Add(mesh.GetInstanceID(), _infoPath);
     }
+
+    const string MATJSON_VAL_IDX_NAME = "Value";
 
     void AssetExport(Material material)
     {
+        //检查是否已保存
+        if (assetInfo.ContainsKey(material.GetInstanceID())) return;
 
+        Debug.Log($"Save Material {material.name} as {material.GetInstanceID()}");
+
+        string filename = material.GetInstanceID().ToString() + ".material";
+        string _savePath = savePath + materialAssetPath;
+
+        if (!Directory.Exists(_savePath))
+        {
+            Directory.CreateDirectory(_savePath);
+        }
+
+        _savePath += filename;
+        string _infoPath = materialAssetPath + filename;
+
+        //开始解析和导出
+        Shader _shader = material.shader;
+        int _pcount = _shader.GetPropertyCount();
+        List<string> _proName = new List<string>(_pcount);
+        List<UnityEngine.Rendering.ShaderPropertyType> _proType = new List<UnityEngine.Rendering.ShaderPropertyType>(_pcount);
+        for (int i = 0; i < _pcount; i++)
+        {
+            //Debug.Log(shader.GetPropertyName(i) + "|" + shader.GetPropertyType(i));
+            _proName.Add(_shader.GetPropertyName(i));
+            _proType.Add(_shader.GetPropertyType(i));
+        }
+
+        JsonData jsonData = new JsonData();
+        jsonData["Name"] = material.name;
+
+        for (int i = 0; i < _proType.Count; i++)
+        {
+            JsonData _jdc = new JsonData();
+            _jdc["Type"] = _proType[i].ToString();
+            //_jdc["PropertyName"] = _proName[i];
+
+
+            switch (_proType[i])
+            {
+                case UnityEngine.Rendering.ShaderPropertyType.Color:
+                    Color c = material.GetColor(_proName[i]);
+                    JsonData _jcolor = new JsonData();
+                    _jcolor.Add((double)c.r);
+                    _jcolor.Add((double)c.g);
+                    _jcolor.Add((double)c.b);
+                    _jcolor.Add((double)c.a);
+                    _jdc[MATJSON_VAL_IDX_NAME] = _jcolor;
+
+                    break;
+                case UnityEngine.Rendering.ShaderPropertyType.Float:
+                    _jdc[MATJSON_VAL_IDX_NAME] = material.GetFloat(_proName[i]);
+
+                    break;
+                case UnityEngine.Rendering.ShaderPropertyType.Range:
+                    _jdc[MATJSON_VAL_IDX_NAME] = material.GetFloat(_proName[i]);
+                    break;
+                case UnityEngine.Rendering.ShaderPropertyType.Vector:
+                    JsonData _jvec = new JsonData();
+                    Vector4 _vec = material.GetVector(_proName[i]);
+                    _jvec.Add(_vec.x);
+                    _jvec.Add(_vec.y);
+                    _jvec.Add(_vec.z);
+                    _jvec.Add(_vec.w);
+                    _jdc[MATJSON_VAL_IDX_NAME] = _jvec;
+                    break;
+                case UnityEngine.Rendering.ShaderPropertyType.Texture:
+                    Texture _t = material.GetTexture(_proName[i]);
+                    //暂时先无视Cubemap
+                    //判断贴图是否为空
+                    if(_t == null)
+                    {
+                        _jdc[MATJSON_VAL_IDX_NAME] = "NULL";
+                        JsonData _jsc = new JsonData();
+                        _jsc.Add((double)0.0f);
+                        _jsc.Add((double)0.0f);
+                        _jsc.Add((double)0.0f);
+                        _jsc.Add((double)0.0f);
+                        _jdc["TextureInfo"] = _jsc;
+                    }
+                    else
+                    {
+                        AssetExport((Texture2D)_t);
+                        _jdc[MATJSON_VAL_IDX_NAME] = _t.GetInstanceID();
+                        Vector4 _offscale = new Vector4();
+                        Vector2 _offset = material.GetTextureOffset(_proName[i]);
+                        Vector2 _scale = material.GetTextureScale(_proName[i]);
+                        _offscale.x = _scale.x;
+                        _offscale.y = _scale.y;
+                        _offscale.z = _offset.x;
+                        _offscale.w = _offset.y;
+                        JsonData _jsc = new JsonData();
+                        _jsc.Add((double)_offscale.x);
+                        _jsc.Add((double)_offscale.y);
+                        _jsc.Add((double)_offscale.z);
+                        _jsc.Add((double)_offscale.w);
+                        _jdc["TextureInfo"] = _jsc;
+                    }
+                    break;
+            }
+            jsonData[_proName[i]] = _jdc;
+        }
+
+        assetInfo.Add(material.GetInstanceID(), _infoPath);
+        File.WriteAllText(_savePath, jsonData.ToJson());
     }
 
     void AssetExport(Texture2D t2d)
     {
-        //处理保存路径
+        //检查是否已保存
         if (assetInfo.ContainsKey(t2d.GetInstanceID())) return;
 
+        Debug.Log($"Save Texture {t2d.name} as {t2d.GetInstanceID()}");
+
+        //处理保存路径
         string filename = t2d.GetInstanceID().ToString() + ".dat";
         string _savePath = savePath + textureAssetPath;
         if (!Directory.Exists(_savePath))
@@ -108,6 +221,7 @@ public partial class ExportScene : EditorWindow
         }
 
         _savePath += filename;
+        string _infoPath = textureAssetPath + filename;
 
         int w = t2d.width;
         int h = t2d.height;
@@ -145,7 +259,7 @@ public partial class ExportScene : EditorWindow
         File.WriteAllBytes(_savePath, bytes);
 
         //更新资源信息
-        assetInfo.Add(t2d.GetInstanceID(), _savePath);
+        assetInfo.Add(t2d.GetInstanceID(), _infoPath);
     }
 
     /// <summary>
@@ -154,7 +268,7 @@ public partial class ExportScene : EditorWindow
     void ExportAssetsInfo()
     {
         JsonData jsonData = new JsonData();
-        string _savePath = $"{savePath}/{GetSceneName()}_AssetsInfo.SFSce";
+        string _savePath = $"{savePath}/{GetSceneName()}_AssetsInfo.SceINF";
         foreach (var info in assetInfo)
         {
             JsonData _assInfo = new JsonData();

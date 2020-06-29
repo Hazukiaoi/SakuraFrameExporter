@@ -10,7 +10,7 @@ using UnityEngine.TestTools.Utils;
 
 public partial class ExportScene : EditorWindow
 {
-    string savePath = "Assets/";
+    string savePath = "Assets/SamScen/";
     static Dictionary<string, Func<Component, IComponentData>> GetComponentData = new Dictionary<string, Func<Component, IComponentData>>();
 
     static ExportScene window;
@@ -41,13 +41,18 @@ public partial class ExportScene : EditorWindow
     {
         GUILayout.BeginHorizontal();
         GUILayout.Label("Save Path(Without file name:)");
-        EditorGUILayout.TextField(savePath);
+        savePath = EditorGUILayout.TextField(savePath);
         GUILayout.EndHorizontal();
 
         if(GUILayout.Button("Export"))
         {
+            //如果组件数据获取字典为空，则重新初始化
+            if (GetComponentData == null) Init();
+
             ExportActiveScene();
             ExportAssetsInfo();
+
+            AssetDatabase.Refresh();
         }
     }
 
@@ -61,9 +66,10 @@ public partial class ExportScene : EditorWindow
             {
                 components.Add(GetJson(GetComponentData[component.GetType().ToString()](component)));
             }
-            catch
+            catch(Exception e)
             {
-                Debug.Log($"Is not allow Type {component.GetType()}");
+                //Debug.Log($"Is not allow Type {component.GetType().ToString()}");
+                Debug.LogWarning($"Type {component.GetType()} error {e}");
             }
         }
         if (components.Count > 0)
@@ -90,6 +96,11 @@ public partial class ExportScene : EditorWindow
     /// </summary>
     void ExportActiveScene()
     {
+        if (!System.IO.Directory.Exists(savePath))
+        {
+            System.IO.Directory.CreateDirectory(savePath);
+        }
+
         string _savePath = $"{savePath}/{GetSceneName()}.SFSce";
         GameObject[] gameObjects = GetAllSceneObject();
 
