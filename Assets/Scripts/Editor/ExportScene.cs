@@ -10,6 +10,8 @@ using UnityEngine.TestTools.Utils;
 
 public partial class ExportScene : EditorWindow
 {
+    const string NULL_DATA = "NULL";
+
     string savePath = "Assets/SamScen/";
     static Dictionary<string, Func<Component, IComponentData>> GetComponentData = new Dictionary<string, Func<Component, IComponentData>>();
 

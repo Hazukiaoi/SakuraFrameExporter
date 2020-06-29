@@ -46,7 +46,8 @@ public partial class ExportScene : EditorWindow
             jd["Scale"]["Y"] = scale.y;
             jd["Scale"]["Z"] = scale.z;
 
-            jd["Parent"] = parent == null ? "NULL" : parent.name;
+            //父对象为空的时候实例化ID为-1
+            jd["Parent"] = parent == null ? NULL_DATA : parent.GetInstanceID().ToString();
             return jd;
         }
 
