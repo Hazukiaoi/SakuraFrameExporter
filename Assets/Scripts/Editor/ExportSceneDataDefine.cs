@@ -55,8 +55,10 @@ public partial class ExportScene : EditorWindow
         {
             //转换到OpenGL
             Quaternion rot = MathEx.EulerToOpenGL(d.eulerAngles, MathEx.AxisOrder.XYZ);
+            Vector3 pos = new Vector3(-d.position.x, d.position.y, d.position.z);
+
             //return new TransformData() { position = d.position, rotaiotn = d.rotation, scale = d.localScale };
-            return new TransformData() { position = d.position, rotaiotn = rot, scale = d.localScale, parent = d.parent};
+            return new TransformData() { position = pos, rotaiotn = rot, scale = d.localScale, parent = d.parent};
         }
     }
     #endregion
