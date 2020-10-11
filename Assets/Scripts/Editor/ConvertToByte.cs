@@ -33,8 +33,8 @@ class ConvertToByte
         unsafe
         {
             byte* pdata = (byte*)&data;
-            byte[] byteArray = new byte[sizeof(float)];
-            for (int i = 0; i < sizeof(float); ++i)
+            byte[] byteArray = new byte[sizeof(int)];
+            for (int i = 0; i < sizeof(int); ++i)
                 byteArray[i] = *pdata++;
             return byteArray;
         }
